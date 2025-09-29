@@ -1,0 +1,114 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            output: lrcget-linux-amd64
+            extension: ""
+          - os: ubuntu-latest
+            platform: windows/amd64
+            output: lrcget-windows-amd64
+            extension: ".exe"
+          - os: ubuntu-latest
+            platform: darwin/amd64
+            output: lrcget-darwin-amd64
+            extension: ""
+          - os: ubuntu-latest
+            platform: darwin/arm64
+            output: lrcget-darwin-arm64
+            extension: ""
+          - os: macos-latest
+            platform: darwin/amd64
+            output: lrcget-darwin-amd64
+            extension: ""
+          - os: macos-latest
+            platform: darwin/arm64
+            output: lrcget-darwin-arm64
+            extension: ""
+          - os: windows-latest
+            platform: windows/amd64
+            output: lrcget-windows-amd64
+            extension: ".exe"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install Wails
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build application
+        run: |
+          mkdir -p build/binaries
+          wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
+
+      - name: List build output
+        run: |
+          ls -la build/binaries/
+          file build/binaries/${{ matrix.output }}${{ matrix.extension }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: build/binaries/${{ matrix.output }}${{ matrix.extension }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: |
+          find artifacts -type f -name "*" | head -20
+          ls -la artifacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/*/lrcget-*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,6 +4,8 @@ import {database} from '../models';
 import {audio} from '../models';
 import {lrclib} from '../models';
 
+export function AddTrack(arg1:database.PersistentTrack):Promise<void>;
+
 export function DownloadLyrics(arg1:number):Promise<string>;
 
 export function FlagLyrics(arg1:number,arg2:string):Promise<void>;

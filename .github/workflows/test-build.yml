@@ -1,0 +1,50 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install Wails
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Test build for current platform
+        run: |
+          wails build -clean
+          ls -la build/bin/
+
+      - name: Test cross-platform builds
+        run: |
+          mkdir -p test-builds
+          wails build -platform linux/amd64 -clean -o test-builds/lrcget-linux-amd64
+          wails build -platform windows/amd64 -clean -o test-builds/lrcget-windows-amd64.exe
+          ls -la test-builds/
+          file test-builds/*
