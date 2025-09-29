@@ -77,7 +77,27 @@ lrcget-go/
 - **Node.js 16+**: JavaScript runtime
 - **npm**: Node package manager
 
-## Installation
+## Pre-compiled Binaries
+
+### Download Ready-to-Use Binaries
+
+You can download pre-compiled binaries for all platforms from the [Releases page](https://github.com/your-username/lrcget-go/releases). No installation of Go, Node.js, or other dependencies required!
+
+**Available platforms:**
+- **Windows**: `lrcget-windows-amd64.exe` (Windows 10+)
+- **macOS Intel**: `lrcget-darwin-amd64` (macOS 10.15+)
+- **macOS Apple Silicon**: `lrcget-darwin-arm64` (macOS 11+)
+- **Linux**: `lrcget-linux-amd64` (Ubuntu 18.04+, CentOS 7+)
+
+### Quick Start with Pre-compiled Binaries
+
+1. **Download** the appropriate binary for your platform
+2. **Make executable** (Linux/macOS): `chmod +x lrcget-*`
+3. **Run**: `./lrcget-*` (or double-click on Windows)
+
+That's it! No additional setup required.
+
+## Building from Source
 
 ### Prerequisites
 
@@ -241,6 +261,19 @@ wails build -platform windows/amd64,darwin/amd64,linux/amd64
 # Build with specific output directory
 wails build -o ./dist
 ```
+
+#### Using Build Scripts (Recommended)
+```bash
+# Build for all platforms (macOS/Linux)
+./build.sh
+
+# Build for all platforms (Windows)
+build.bat
+
+# Binaries will be created in build/binaries/
+```
+
+See [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Testing
 ```bash
