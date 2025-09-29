@@ -263,15 +263,74 @@ wails build -o ./dist
 ```
 
 #### Using Build Scripts (Recommended)
+
+The easiest way to build for all platforms is using the provided build scripts:
+
+**On macOS/Linux:**
 ```bash
-# Build for all platforms (macOS/Linux)
+# Make the script executable (first time only)
+chmod +x build.sh
+
+# Build for all platforms
 ./build.sh
-
-# Build for all platforms (Windows)
-build.bat
-
-# Binaries will be created in build/binaries/
 ```
+
+**On Windows:**
+```cmd
+# Run the batch script
+build.bat
+```
+
+**What the scripts do:**
+- Build for Windows (amd64)
+- Build for Linux (amd64) 
+- Build for macOS Intel (amd64)
+- Build for macOS Apple Silicon (arm64)
+- Create all binaries in `build/binaries/` directory
+
+**Output files:**
+```
+build/binaries/
+├── lrcget-windows-amd64.exe    # Windows executable
+├── lrcget-linux-amd64          # Linux executable
+├── lrcget-darwin-amd64         # macOS Intel executable
+└── lrcget-darwin-arm64         # macOS Apple Silicon executable
+```
+
+**Requirements for cross-compilation:**
+- **macOS**: Can build for all platforms natively
+- **Linux**: May need additional setup for Windows/macOS builds
+- **Windows**: May need additional setup for Linux/macOS builds
+
+For reliable cross-platform builds, use the GitHub Actions workflow (see Automated Builds section below).
+
+#### Automated Builds with GitHub Actions
+
+The repository includes a GitHub Actions workflow that automatically builds for all platforms when you create a release tag.
+
+**To create a release with pre-compiled binaries:**
+
+1. **Create and push a version tag:**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **GitHub Actions will automatically:**
+   - Build for all platforms (Windows, Linux, macOS Intel, macOS Apple Silicon)
+   - Create a GitHub release
+   - Attach all binaries to the release
+   - Make them available for download
+
+3. **Users can then download:**
+   - Go to the [Releases page](https://github.com/your-username/lrcget-go/releases)
+   - Download the appropriate binary for their platform
+   - Run without any dependencies
+
+**Manual trigger (optional):**
+- Go to Actions tab in GitHub
+- Select "Build and Release" workflow
+- Click "Run workflow"
 
 See [BUILD.md](BUILD.md) for detailed build instructions.
 
@@ -320,6 +379,32 @@ go test ./internal/audio
 - **Fix**: 
   - Ubuntu/Debian: `sudo apt install libasound2-dev`
   - CentOS/RHEL: `sudo dnf install alsa-lib-devel`
+
+##### Build script issues
+- **Issue**: "Permission denied" when running build.sh
+- **Solution**: Make the script executable
+- **Fix**: `chmod +x build.sh`
+
+- **Issue**: "Wails not found" in build script
+- **Solution**: Install Wails CLI
+- **Fix**: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
+
+- **Issue**: Cross-compilation fails
+- **Solution**: Use GitHub Actions for reliable cross-platform builds
+- **Fix**: Create a version tag to trigger automated builds
+
+- **Issue**: Build script creates empty binaries
+- **Solution**: Check Wails and Go installation
+- **Fix**: 
+  ```bash
+  # Verify installations
+  wails version
+  go version
+  node --version
+  
+  # Try manual build first
+  wails build
+  ```
 
 #### Platform-Specific Issues
 
@@ -508,6 +593,40 @@ CMD ["./lrcget-go"]
 - **Integration Tests**: Test API endpoints
 - **Cross-Platform**: Test on multiple platforms if possible
 - **Documentation**: Update README for new features
+
+## Quick Reference
+
+### Build Commands
+```bash
+# Quick build for all platforms
+./build.sh                    # macOS/Linux
+build.bat                     # Windows
+
+# Manual builds
+wails build                   # Current platform
+wails build -platform windows/amd64
+wails build -platform darwin/amd64
+wails build -platform darwin/arm64
+wails build -platform linux/amd64
+
+# Development
+wails dev                     # Development server
+wails build -dev              # Development build
+```
+
+### Release Process
+```bash
+# Create and push a release
+git tag v1.0.0
+git push origin v1.0.0
+# GitHub Actions will automatically build and create release
+```
+
+### File Locations
+- **Build scripts**: `build.sh`, `build.bat`
+- **Build output**: `build/binaries/`
+- **GitHub Actions**: `.github/workflows/build.yml`
+- **Detailed docs**: `BUILD.md`
 
 ## License
 
