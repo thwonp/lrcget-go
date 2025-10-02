@@ -36,6 +36,14 @@ jobs:
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      - name: Add Go bin to PATH
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command '"$env:USERPROFILE\\go\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+          else
+            echo "$HOME/go/bin" >> $GITHUB_PATH
+          fi
+
       - name: Install system dependencies (Ubuntu/Linux)
         if: runner.os == 'Linux'
         run: |
@@ -83,12 +91,27 @@ jobs:
       - name: Test build for current platform
         run: |
           wails build -clean
-          ls -la build/bin/
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "Get-ChildItem -LiteralPath 'build/bin' -Force | Select-Object Name,Length,Mode,LastWriteTime"
+          else
+            ls -la build/bin/
+          fi
 
       - name: Test cross-platform builds
         run: |
-          mkdir -p test-builds
-          wails build -platform linux/amd64 -clean -o test-builds/lrcget-linux-amd64
-          wails build -platform windows/amd64 -clean -o test-builds/lrcget-windows-amd64.exe
-          ls -la test-builds/
-          file test-builds/*
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "New-Item -ItemType Directory -Force -Path 'test-builds' | Out-Null"
+            pwsh -Command "& wails build -platform 'linux/amd64' -clean -o 'test-builds/lrcget-linux-amd64'"
+            pwsh -Command "& wails build -platform 'windows/amd64' -clean -o 'test-builds/lrcget-windows-amd64.exe'"
+          else
+            mkdir -p test-builds
+            wails build -platform linux/amd64 -clean -o test-builds/lrcget-linux-amd64
+            wails build -platform windows/amd64 -clean -o test-builds/lrcget-windows-amd64.exe
+          fi
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "Get-ChildItem -LiteralPath 'test-builds' -Force | Select-Object Name,Length,Mode,LastWriteTime"
+            pwsh -Command "Get-ChildItem -LiteralPath 'test-builds' | ForEach-Object { $_.FullName }"
+          else
+            ls -la test-builds/
+            file test-builds/*
+          fi

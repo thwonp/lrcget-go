@@ -121,15 +121,34 @@ jobs:
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      - name: Add Go bin to PATH
+        run: |
+          # Ensure the location where `go install` puts binaries is on PATH for subsequent steps
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command '"$env:USERPROFILE\\go\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+          else
+            echo "$HOME/go/bin" >> $GITHUB_PATH
+          fi
+
       - name: Build application
         run: |
-          mkdir -p build/binaries
-          wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null"
+            pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}'"
+          else
+            mkdir -p build/binaries
+            wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          fi
 
       - name: List build output
         run: |
-          ls -la build/binaries/
-          file build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
+            pwsh -Command "if (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}') { Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
+          else
+            ls -la build/binaries/
+            file build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -153,8 +172,13 @@ jobs:
 
       - name: List downloaded artifacts
         run: |
-          find artifacts -type f -name "*" | head -20
-          ls -la artifacts/
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "Get-ChildItem -Recurse -LiteralPath artifacts | Select-Object FullName,Length | Select -First 20"
+            pwsh -Command "Get-ChildItem -LiteralPath artifacts -Force | Select-Object Name,Length,Mode,LastWriteTime"
+          else
+            find artifacts -type f -name "*" | head -20
+            ls -la artifacts/
+          fi
 
       - name: Create release
         uses: softprops/action-gh-release@v1
