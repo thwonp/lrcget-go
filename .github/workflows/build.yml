@@ -133,25 +133,29 @@ jobs:
           # Add Go bin to GITHUB_PATH for Linux/macOS
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - name: Build application
+      - name: Build application (Windows)
+        if: runner.os == 'Windows'
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null"
-            pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}'"
-          else
-            mkdir -p build/binaries
-            wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
-          fi
+          pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null"
+          pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}'"
 
-      - name: List build output
+      - name: Build application (non-Windows)
+        if: runner.os != 'Windows'
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
-            pwsh -Command "if (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}') { Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
-          else
-            ls -la build/binaries/
-            file build/binaries/${{ matrix.output }}${{ matrix.extension }}
-          fi
+          mkdir -p build/binaries
+          wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
+
+      - name: List build output (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
+          pwsh -Command "if (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}') { Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
+
+      - name: List build output (non-Windows)
+        if: runner.os != 'Windows'
+        run: |
+          ls -la build/binaries/
+          file build/binaries/${{ matrix.output }}${{ matrix.extension }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -173,15 +177,17 @@ jobs:
         with:
           path: artifacts
 
-      - name: List downloaded artifacts
+      - name: List downloaded artifacts (Windows)
+        if: runner.os == 'Windows'
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "Get-ChildItem -Recurse -LiteralPath artifacts | Select-Object FullName,Length | Select -First 20"
-            pwsh -Command "Get-ChildItem -LiteralPath artifacts -Force | Select-Object Name,Length,Mode,LastWriteTime"
-          else
-            find artifacts -type f -name "*" | head -20
-            ls -la artifacts/
-          fi
+          pwsh -Command "Get-ChildItem -Recurse -LiteralPath artifacts | Select-Object FullName,Length | Select -First 20"
+          pwsh -Command "Get-ChildItem -LiteralPath artifacts -Force | Select-Object Name,Length,Mode,LastWriteTime"
+
+      - name: List downloaded artifacts (non-Windows)
+        if: runner.os != 'Windows'
+        run: |
+          find artifacts -type f -name "*" | head -20
+          ls -la artifacts/
 
       - name: Create release
         uses: softprops/action-gh-release@v1
