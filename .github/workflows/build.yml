@@ -166,8 +166,7 @@ jobs:
         run: |
           echo "Checking for artifact: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "if (-Not (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}')) { Write-Host 'Artifact missing' ; exit 1 } else { Write-Host 'Artifact found'; Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }
-"
+            pwsh -Command "if (-Not (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}')) { Write-Host 'Artifact missing' ; exit 1 } else { Write-Host 'Artifact found'; Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
           else
             if [ -f build/binaries/${{ matrix.output }}${{ matrix.extension }} ]; then
               echo "Artifact found:"
