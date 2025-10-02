@@ -63,11 +63,30 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install system dependencies (Ubuntu/Linux)
+        if: runner.os == 'Linux'
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y pkg-config libgtk-3-dev libwebkit2gtk-4.0-dev libgirepository1.0-dev gcc g++
+          sudo apt-get install -y software-properties-common ca-certificates apt-transport-https || true
+          # Ensure 'universe' is available on Ubuntu runners
+          sudo add-apt-repository universe || true
+          sudo apt-get update
+
+          # Base packages required by Wails native webview
+          pkgs=(pkg-config libgtk-3-dev libgirepository1.0-dev libcairo2-dev libjson-glib-dev libatk1.0-dev libpango1.0-dev gcc g++)
+
+          # probe for available webkit dev package names and pick the first that exists
+          for candidate in libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libwebkit2gtk-dev; do
+            if apt-cache show "$candidate" >/dev/null 2>&1; then
+              pkgs+=("$candidate")
+              echo "Installing detected webkit package: $candidate"
+              break
+            fi
+          done
+
+          echo "Installing packages: ${pkgs[*]}"
+          sudo apt-get install -y "${pkgs[@]}"
           sudo apt-get clean
 
       - name: Install Wails
