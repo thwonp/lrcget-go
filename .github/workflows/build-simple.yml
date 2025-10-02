@@ -44,7 +44,7 @@ jobs:
       - name: Add Go bin to PATH (Windows)
         if: runner.os == 'Windows'
         run: |
-          pwsh -Command '"$env:USERPROFILE\\go\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+          pwsh -NoProfile -Command "Add-Content -Path $env:GITHUB_PATH -Value \"$env:USERPROFILE\\go\\bin\""
 
       - name: Install system dependencies (Ubuntu/Linux)
         if: runner.os == 'Linux'
@@ -102,7 +102,7 @@ jobs:
       - name: Build for Linux
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "& wails build -platform 'linux/amd64' -clean -o 'build/binaries/lrcget-linux-amd64'"
+            pwsh -NoProfile -Command "& wails build -platform 'linux/amd64' -clean -o 'build/binaries/lrcget-linux-amd64'"
           else
             wails build -platform linux/amd64 -clean -o build/binaries/lrcget-linux-amd64
           fi
@@ -110,7 +110,7 @@ jobs:
       - name: Build for Windows
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "& wails build -platform 'windows/amd64' -clean -o 'build/binaries/lrcget-windows-amd64.exe'"
+            pwsh -NoProfile -Command "& wails build -platform 'windows/amd64' -clean -o 'build/binaries/lrcget-windows-amd64.exe'"
           else
             wails build -platform windows/amd64 -clean -o build/binaries/lrcget-windows-amd64.exe
           fi
@@ -118,7 +118,7 @@ jobs:
       - name: Build for macOS Intel
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "& wails build -platform 'darwin/amd64' -clean -o 'build/binaries/lrcget-darwin-amd64'"
+            pwsh -NoProfile -Command "& wails build -platform 'darwin/amd64' -clean -o 'build/binaries/lrcget-darwin-amd64'"
           else
             wails build -platform darwin/amd64 -clean -o build/binaries/lrcget-darwin-amd64
           fi
@@ -126,7 +126,7 @@ jobs:
       - name: Build for macOS Apple Silicon
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "& wails build -platform 'darwin/arm64' -clean -o 'build/binaries/lrcget-darwin-arm64'"
+            pwsh -NoProfile -Command "& wails build -platform 'darwin/arm64' -clean -o 'build/binaries/lrcget-darwin-arm64'"
           else
             wails build -platform darwin/arm64 -clean -o build/binaries/lrcget-darwin-arm64
           fi
@@ -134,8 +134,8 @@ jobs:
       - name: List build artifacts
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
-            pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' | ForEach-Object { $_.FullName }"
+            pwsh -NoProfile -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
+            pwsh -NoProfile -Command "Get-ChildItem -LiteralPath 'build/binaries' | ForEach-Object { $_.FullName }"
           else
             ls -la build/binaries/
             file build/binaries/*
