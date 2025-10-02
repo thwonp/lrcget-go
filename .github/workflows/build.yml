@@ -89,6 +89,34 @@ jobs:
           sudo apt-get install -y "${pkgs[@]}"
           sudo apt-get clean
 
+          # Ensure pkg-config can find webkit2gtk-4.0: if the distro only provides
+          # webkit2gtk-4.1.pc (or another minor version), create a symlink
+          # webkit2gtk-4.0.pc -> webkit2gtk-4.1.pc so builds that request 4.0 succeed.
+          PKGDIRS=(/usr/lib/x86_64-linux-gnu/pkgconfig /usr/lib/pkgconfig /usr/share/pkgconfig /usr/local/lib/pkgconfig)
+          for d in "${PKGDIRS[@]}"; do
+            if [ -d "$d" ]; then
+              # look for webkit2gtk-4.0.pc
+              if [ -f "$d/webkit2gtk-4.0.pc" ]; then
+                echo "webkit2gtk-4.0.pc already present in $d"
+                break
+              fi
+              # try to find any webkit2gtk-*.pc and prefer 4.1 if present
+              if [ -f "$d/webkit2gtk-4.1.pc" ]; then
+                echo "Creating symlink $d/webkit2gtk-4.0.pc -> $d/webkit2gtk-4.1.pc"
+                sudo ln -s "$d/webkit2gtk-4.1.pc" "$d/webkit2gtk-4.0.pc"
+                break
+              fi
+              # otherwise pick any matching webkit2gtk-*.pc
+              shopt -s nullglob
+              for f in "$d"/webkit2gtk-*.pc; do
+                echo "Creating symlink $d/webkit2gtk-4.0.pc -> $f"
+                sudo ln -s "$f" "$d/webkit2gtk-4.0.pc" || true
+                break 2
+              done
+              shopt -u nullglob
+            fi
+          done
+
       - name: Install Wails
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@latest

@@ -59,6 +59,27 @@ jobs:
           sudo apt-get install -y "${pkgs[@]}"
           sudo apt-get clean
 
+          PKGDIRS=(/usr/lib/x86_64-linux-gnu/pkgconfig /usr/lib/pkgconfig /usr/share/pkgconfig /usr/local/lib/pkgconfig)
+          for d in "${PKGDIRS[@]}"; do
+            if [ -d "$d" ]; then
+              if [ -f "$d/webkit2gtk-4.0.pc" ]; then
+                echo "webkit2gtk-4.0.pc already present in $d"
+                break
+              fi
+              if [ -f "$d/webkit2gtk-4.1.pc" ]; then
+                echo "Creating symlink $d/webkit2gtk-4.0.pc -> $d/webkit2gtk-4.1.pc"
+                sudo ln -s "$d/webkit2gtk-4.1.pc" "$d/webkit2gtk-4.0.pc"
+                break
+              fi
+              shopt -s nullglob
+              for f in "$d"/webkit2gtk-*.pc; do
+                echo "Creating symlink $d/webkit2gtk-4.0.pc -> $f"
+                sudo ln -s "$f" "$d/webkit2gtk-4.0.pc" || true
+                break 2
+              done
+              shopt -u nullglob
+            fi
+          done
       - name: Test build for current platform
         run: |
           wails build -clean
