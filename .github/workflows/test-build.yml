@@ -36,6 +36,13 @@ jobs:
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      - name: Install system dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgtk-3-dev libwebkit2gtk-4.0-dev libgirepository1.0-dev gcc g++
+          sudo apt-get clean
+
       - name: Test build for current platform
         run: |
           wails build -clean
