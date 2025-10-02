@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -186,8 +189,12 @@ jobs:
       - name: List downloaded artifacts (non-Windows)
         if: runner.os != 'Windows'
         run: |
-          find artifacts -type f -name "*" | head -20
-          ls -la artifacts/
+          if [ -d artifacts ]; then
+            find artifacts -type f -name "*" | head -20
+            ls -la artifacts/
+          else
+            echo "No artifacts directory found. Download-artifact may have failed or produced no files."
+          fi
 
       - name: Create release
         uses: softprops/action-gh-release@v1

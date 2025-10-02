@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -136,6 +139,16 @@ jobs:
           else
             ls -la build/binaries/
             file build/binaries/*
+          fi
+
+      - name: Verify release files exist
+        run: |
+          if [ -n "$(ls build/binaries/lrcget-* 2>/dev/null)" ]; then
+            echo "Release files found."
+            ls -la build/binaries/lrcget-*
+          else
+            echo "No release files found in build/binaries. Skipping release step."
+            exit 1
           fi
 
       - name: Create release
