@@ -140,13 +140,15 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null"
-          pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}'"
+          pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/logs' | Out-Null"
+          pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' *>&1 | Tee-Object -FilePath 'build/logs/${{ matrix.output }}.log'"
 
       - name: Build application (non-Windows)
         if: runner.os != 'Windows'
         run: |
           mkdir -p build/binaries
-          wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          mkdir -p build/logs
+          wails build -platform ${{ matrix.platform }} -clean -o build/binaries/${{ matrix.output }}${{ matrix.extension }} 2>&1 | tee build/logs/${{ matrix.output }}.log
 
       - name: List build output (Windows)
         if: runner.os == 'Windows'
@@ -160,11 +162,30 @@ jobs:
           ls -la build/binaries/
           file build/binaries/${{ matrix.output }}${{ matrix.extension }}
 
+      - name: Diagnostics: verify expected artifact exists
+        run: |
+          echo "Checking for artifact: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            pwsh -Command "if (-Not (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}')) { Write-Host 'Artifact missing' ; exit 1 } else { Write-Host 'Artifact found'; Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }
+"
+          else
+            if [ -f build/binaries/${{ matrix.output }}${{ matrix.extension }} ]; then
+              echo "Artifact found:"
+              ls -la build/binaries/${{ matrix.output }}${{ matrix.extension }}
+            else
+              echo "ERROR: Expected artifact not found: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
+              ls -la build/binaries || true
+              exit 1
+            fi
+          fi
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output }}
-          path: build/binaries/${{ matrix.output }}${{ matrix.extension }}
+          path: |
+            build/binaries/${{ matrix.output }}${{ matrix.extension }}
+            build/logs/${{ matrix.output }}.log
 
   release:
     needs: build
