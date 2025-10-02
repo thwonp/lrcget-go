@@ -138,10 +138,11 @@ jobs:
 
       - name: Build application (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null"
-          pwsh -Command "New-Item -ItemType Directory -Force -Path 'build/logs' | Out-Null"
-          pwsh -Command "& wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' *>&1 | Tee-Object -FilePath 'build/logs/${{ matrix.output }}.log'"
+          New-Item -ItemType Directory -Force -Path 'build/binaries' | Out-Null
+          New-Item -ItemType Directory -Force -Path 'build/logs' | Out-Null
+          & wails build -platform '${{ matrix.platform }}' -clean -o 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' *>&1 | Tee-Object -FilePath "build/logs/${{ matrix.output }}.log"
 
       - name: Build application (non-Windows)
         if: runner.os != 'Windows'
@@ -152,9 +153,10 @@ jobs:
 
       - name: List build output (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          pwsh -Command "Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime"
-          pwsh -Command "if (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}') { Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
+          Get-ChildItem -LiteralPath 'build/binaries' -Force | Select-Object Name,Length,Mode,LastWriteTime
+          if (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}') { Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }
 
       - name: List build output (non-Windows)
         if: runner.os != 'Windows'
@@ -162,20 +164,24 @@ jobs:
           ls -la build/binaries/
           file build/binaries/${{ matrix.output }}${{ matrix.extension }}
 
-      - name: Diagnostics: verify expected artifact exists
+      - name: Diagnostics: verify expected artifact exists (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Checking for artifact: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
+          if (-Not (Test-Path "build/binaries/${{ matrix.output }}${{ matrix.extension }}")) { Write-Host 'Artifact missing'; exit 1 } else { Write-Host 'Artifact found'; Get-Item "build/binaries/${{ matrix.output }}${{ matrix.extension }}" | Format-List }
+
+      - name: Diagnostics: verify expected artifact exists (non-Windows)
+        if: runner.os != 'Windows'
         run: |
           echo "Checking for artifact: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            pwsh -Command "if (-Not (Test-Path 'build/binaries/${{ matrix.output }}${{ matrix.extension }}')) { Write-Host 'Artifact missing' ; exit 1 } else { Write-Host 'Artifact found'; Get-Item 'build/binaries/${{ matrix.output }}${{ matrix.extension }}' | Format-List }"
+          if [ -f build/binaries/${{ matrix.output }}${{ matrix.extension }} ]; then
+            echo "Artifact found:"
+            ls -la build/binaries/${{ matrix.output }}${{ matrix.extension }}
           else
-            if [ -f build/binaries/${{ matrix.output }}${{ matrix.extension }} ]; then
-              echo "Artifact found:"
-              ls -la build/binaries/${{ matrix.output }}${{ matrix.extension }}
-            else
-              echo "ERROR: Expected artifact not found: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
-              ls -la build/binaries || true
-              exit 1
-            fi
+            echo "ERROR: Expected artifact not found: build/binaries/${{ matrix.output }}${{ matrix.extension }}"
+            ls -la build/binaries || true
+            exit 1
           fi
 
       - name: Upload build artifacts
